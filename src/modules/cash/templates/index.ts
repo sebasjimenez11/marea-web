@@ -1,0 +1,1 @@
+export { CashTemplate } from './CashTemplate';

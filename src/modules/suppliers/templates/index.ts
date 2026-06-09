@@ -1,0 +1,1 @@
+export { SuppliersTemplate } from './SuppliersTemplate';

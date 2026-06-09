@@ -1,0 +1,1 @@
+export { InventoryTemplate } from './InventoryTemplate';
