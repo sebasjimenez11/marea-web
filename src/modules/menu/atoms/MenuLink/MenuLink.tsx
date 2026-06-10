@@ -1,20 +1,16 @@
 import type { MenuLinkProps } from './MenuLink.types';
-import { navigateTo } from '@/app/lib/navigation';
+import { Link } from 'react-router-dom';
 
 const MenuLink = ({ label, href, icon, isActive = false, onClick }: MenuLinkProps) => {
   return (
-    <a
-      href={href}
+    <Link
+      to={href}
       className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
         isActive
           ? 'bg-[#14548d] text-[#d9ebff] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]'
           : 'text-text-secondary hover:bg-white/[0.04] hover:text-[#d9ebff]'
       }`}
-      onClick={event => {
-        event.preventDefault();
-        navigateTo(href);
-        onClick?.();
-      }}
+      onClick={onClick}
     >
       <span
         className={`flex h-8 w-8 items-center justify-center rounded-lg border text-xs ${
@@ -26,7 +22,7 @@ const MenuLink = ({ label, href, icon, isActive = false, onClick }: MenuLinkProp
         {icon ?? label.slice(0, 1)}
       </span>
       <span>{label}</span>
-    </a>
+    </Link>
   );
 };
 
