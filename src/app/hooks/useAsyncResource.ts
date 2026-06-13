@@ -1,42 +1,81 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type DependencyList } from 'react';
+import type { ApiResponse } from '@/app/api';
 
-interface ApiLikeResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: {
-    message: string;
-  };
+type AsyncResourceFetcher<T> = (signal?: AbortSignal) => Promise<ApiResponse<T>>;
+
+const EMPTY_DEPENDENCIES: DependencyList = [];
+
+export interface UseAsyncResourceOptions<T> {
+  dependencies?: DependencyList;
+  enabled?: boolean;
+  initialData?: T | null;
+  keepPreviousData?: boolean;
 }
 
 export interface UseAsyncResourceResult<T> {
   data: T | null;
   isLoading: boolean;
+  isRefetching: boolean;
   error: Error | null;
+  refetch: () => void;
 }
 
 export const useAsyncResource = <T,>(
-  fetcher: () => Promise<ApiLikeResponse<T>>,
+  fetcher: AsyncResourceFetcher<T>,
+  options: UseAsyncResourceOptions<T> = {},
 ): UseAsyncResourceResult<T> => {
-  const [data, setData] = useState<T | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const {
+    dependencies = EMPTY_DEPENDENCIES,
+    enabled = true,
+    initialData = null,
+    keepPreviousData = true,
+  } = options;
+  const [data, setData] = useState<T | null>(initialData);
+  const [isLoading, setIsLoading] = useState(enabled && initialData === null);
+  const [isRefetching, setIsRefetching] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const refetch = useCallback(() => {
+    setReloadKey(current => current + 1);
+  }, []);
 
   useEffect(() => {
+    if (!enabled) {
+      return undefined;
+    }
+
     let isMounted = true;
+    const controller = new AbortController();
 
     const load = async () => {
       try {
-        setIsLoading(true);
+        setIsLoading(current => {
+          if (current) {
+            return true;
+          }
+
+          setIsRefetching(true);
+          return false;
+        });
         setError(null);
 
-        const response = await fetcher();
+        if (!keepPreviousData) {
+          setData(null);
+        }
+
+        const response = await fetcher(controller.signal);
 
         if (!isMounted) {
           return;
         }
 
-        if (response.success && response.data) {
-          setData(response.data);
+        if (response.success) {
+          setData(response.data ?? null);
+          return;
+        }
+
+        if (response.error?.code === 'ABORTED') {
           return;
         }
 
@@ -48,6 +87,7 @@ export const useAsyncResource = <T,>(
       } finally {
         if (isMounted) {
           setIsLoading(false);
+          setIsRefetching(false);
         }
       }
     };
@@ -56,8 +96,9 @@ export const useAsyncResource = <T,>(
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
-  }, [fetcher]);
+  }, [dependencies, enabled, fetcher, keepPreviousData, reloadKey]);
 
-  return { data, isLoading, error };
+  return { data, isLoading, isRefetching, error, refetch };
 };

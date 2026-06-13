@@ -25,11 +25,4 @@ export interface InvoiceFilters {
   status: 'all' | InvoiceStatus;
 }
 
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: {
-    code: string;
-    message: string;
-  };
-}
+export type { ApiResponse } from '@/app/api';
