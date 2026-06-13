@@ -1,4 +1,4 @@
-import { Modal, ModalActionButtons } from '@/components/common';
+import { AlertBanner, Modal, ModalActionButtons } from '@/components/common';
 import { useProductCreateForm } from '@/modules/products/hooks';
 import {
   ProductBasicsFields,
@@ -11,14 +11,18 @@ export interface ProductCreateModalProps {
   open: boolean;
   suppliers: string[];
   categories: string[];
+  error?: Error | null;
+  isSaving?: boolean;
   onClose: () => void;
-  onCreate: (product: CreateProductInput) => void;
+  onCreate: (product: CreateProductInput) => boolean | Promise<boolean>;
 }
 
 const ProductCreateModal = ({
   open,
   suppliers,
   categories,
+  error,
+  isSaving = false,
   onClose,
   onCreate,
 }: ProductCreateModalProps) => {
@@ -37,12 +41,24 @@ const ProductCreateModal = ({
       footer={
         <ModalActionButtons
           onCancel={handleClose}
-          confirmLabel="Guardar producto"
-          confirmButtonProps={{ type: 'submit', form: 'create-product-form' }}
+          confirmLabel={isSaving ? 'Guardando...' : 'Guardar producto'}
+          confirmButtonProps={{
+            type: 'submit',
+            form: 'create-product-form',
+            isLoading: isSaving,
+          }}
         />
       }
     >
       <form id="create-product-form" className="space-y-5" onSubmit={handleSubmit}>
+        {error && (
+          <AlertBanner
+            key={error.message}
+            type="error"
+            title="No se pudo crear el producto"
+            message={error.message}
+          />
+        )}
         <ProductBasicsFields
           form={form}
           suppliers={suppliers}

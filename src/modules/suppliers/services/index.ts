@@ -1,1 +1,1 @@
-export { getSuppliersData } from './suppliers.service';
+export { createSupplier, getSuppliersData } from './suppliers.service';

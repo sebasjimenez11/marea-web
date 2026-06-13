@@ -5,7 +5,7 @@ import type { CreateProductInput } from '@/modules/products/types';
 export interface UseProductCreateFormOptions {
   suppliers: string[];
   categories: string[];
-  onCreate: (product: CreateProductInput) => void;
+  onCreate: (product: CreateProductInput) => boolean | Promise<boolean>;
   onClose: () => void;
 }
 
@@ -13,7 +13,7 @@ export interface UseProductCreateFormResult {
   form: CreateProductInput;
   updateField: <K extends keyof CreateProductInput>(field: K, value: CreateProductInput[K]) => void;
   handleClose: () => void;
-  handleSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  handleSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
 }
 
 export const useProductCreateForm = ({
@@ -37,19 +37,23 @@ export const useProductCreateForm = ({
     onClose();
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!form.name.trim() || !form.category || !form.supplier) {
+    if (!form.name.trim()) {
       return;
     }
 
-    onCreate({
+    const wasCreated = await onCreate({
       ...form,
       name: form.name.trim(),
       size: form.size.trim() || 'Sin formato',
       notes: form.notes.trim(),
     });
+
+    if (!wasCreated) {
+      return;
+    }
 
     setForm(initialForm);
     onClose();

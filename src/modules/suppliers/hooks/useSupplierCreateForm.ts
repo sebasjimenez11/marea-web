@@ -3,7 +3,7 @@ import { createInitialSupplierForm } from '@/modules/suppliers/lib';
 import type { CreateSupplierInput } from '@/modules/suppliers/types';
 
 export interface UseSupplierCreateFormOptions {
-  onCreate: (supplier: CreateSupplierInput) => void;
+  onCreate: (supplier: CreateSupplierInput) => boolean | Promise<boolean>;
   onClose: () => void;
 }
 
@@ -11,7 +11,7 @@ export interface UseSupplierCreateFormResult {
   form: CreateSupplierInput;
   updateField: <K extends keyof CreateSupplierInput>(field: K, value: CreateSupplierInput[K]) => void;
   handleClose: () => void;
-  handleSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  handleSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
 }
 
 export const useSupplierCreateForm = ({
@@ -30,19 +30,23 @@ export const useSupplierCreateForm = ({
     onClose();
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!form.name.trim() || !form.phone.trim() || !form.email.trim()) {
+    if (!form.name.trim()) {
       return;
     }
 
-    onCreate({
+    const wasCreated = await onCreate({
       name: form.name.trim(),
       phone: form.phone.trim(),
       email: form.email.trim(),
       status: form.status,
     });
+
+    if (!wasCreated) {
+      return;
+    }
 
     setForm(initialForm);
     onClose();

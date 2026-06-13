@@ -1,41 +1,30 @@
-import { useMemo, useState } from 'react';
-import { createProductFromInput } from '@/modules/products/lib';
-import type { CreateProductInput, Product } from '@/modules/products/types';
+import { useMemo } from 'react';
+import type { Product } from '@/modules/products/types';
 
 export interface UseProductsCatalogResult {
   products: Product[];
   suppliers: string[];
   categories: string[];
-  handleCreateProduct: (productInput: CreateProductInput) => void;
 }
 
-export const useProductsCatalog = (baseProducts: Product[] = []): UseProductsCatalogResult => {
-  const [createdProducts, setCreatedProducts] = useState<Product[]>([]);
-
-  const products = useMemo(
-    () => [...createdProducts, ...baseProducts],
-    [baseProducts, createdProducts],
-  );
-
+export const useProductsCatalog = (
+  baseProducts: Product[] = [],
+  baseSuppliers: string[] = [],
+  baseCategories: string[] = [],
+): UseProductsCatalogResult => {
   const suppliers = useMemo(
-    () => ['Todos', ...new Set(products.map(product => product.supplier))],
-    [products],
+    () => baseSuppliers.length ? baseSuppliers : ['Todos'],
+    [baseSuppliers],
   );
 
   const categories = useMemo(
-    () => ['Todas', ...new Set(products.map(product => product.category))],
-    [products],
+    () => baseCategories.length ? baseCategories : ['Todas'],
+    [baseCategories],
   );
 
-  const handleCreateProduct = (productInput: CreateProductInput) => {
-    const nextProduct = createProductFromInput(productInput);
-    setCreatedProducts(current => [nextProduct, ...current]);
-  };
-
   return {
-    products,
+    products: baseProducts,
     suppliers,
     categories,
-    handleCreateProduct,
   };
 };

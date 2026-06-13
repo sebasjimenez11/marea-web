@@ -1,12 +1,30 @@
 import { useState } from 'react';
 import { Button, EmptyState, ErrorState, LoadingState, PageHeader } from '@/components/common';
+import { useApiMutation } from '@/app/hooks';
 import { useSuppliersCatalog, useSuppliersData } from '@/modules/suppliers/hooks';
 import { SupplierCreateModal, SuppliersTable } from '@/modules/suppliers/organisms';
+import { createSupplier } from '@/modules/suppliers/services';
+import type { CreateSupplierInput } from '@/modules/suppliers/types';
 
 const SuppliersTemplate = () => {
-  const { data, isLoading, error } = useSuppliersData();
+  const { data, isLoading, error, refetch } = useSuppliersData();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const { suppliers, handleCreateSupplier } = useSuppliersCatalog(data?.suppliers ?? []);
+  const { suppliers } = useSuppliersCatalog(data?.suppliers ?? []);
+  const createSupplierMutation = useApiMutation(createSupplier, {
+    onSuccess: () => {
+      refetch();
+    },
+  });
+
+  const handleCreateSupplier = async (supplierInput: CreateSupplierInput) => {
+    const supplier = await createSupplierMutation.mutate(supplierInput);
+    return Boolean(supplier);
+  };
+
+  const handleOpenCreateModal = () => {
+    createSupplierMutation.reset();
+    setIsCreateModalOpen(true);
+  };
 
   if (isLoading) {
     return <LoadingState message="Cargando proveedores..." />;
@@ -26,7 +44,7 @@ const SuppliersTemplate = () => {
         title="Proveedores"
         subtitle="Gestiona los contactos y estado de tus distribuidores."
         action={
-          <Button className="gap-2" onClick={() => setIsCreateModalOpen(true)}>
+          <Button className="gap-2" onClick={handleOpenCreateModal}>
             <span aria-hidden="true">＋</span>
             Nuevo proveedor
           </Button>
@@ -37,6 +55,8 @@ const SuppliersTemplate = () => {
 
       <SupplierCreateModal
         open={isCreateModalOpen}
+        error={createSupplierMutation.error}
+        isSaving={createSupplierMutation.isPending}
         onClose={() => setIsCreateModalOpen(false)}
         onCreate={handleCreateSupplier}
       />
