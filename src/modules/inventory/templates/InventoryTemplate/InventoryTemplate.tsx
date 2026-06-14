@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { EmptyState, ErrorState, LoadingState, PageHeader, SearchInput } from '@/components/common';
+import { useApiMutation } from '@/app/hooks';
 import { useInventoryData, useInventoryMovementModal } from '@/modules/inventory/hooks';
 import { filterInventoryItems } from '@/modules/inventory/lib';
 import { InventoryMovementModal, InventoryQuickList } from '@/modules/inventory/organisms';
+import { createInventoryMovement } from '@/modules/inventory/services';
 import type { InventoryMovementDraft } from '@/modules/inventory/types';
 
 const InventoryTemplate = () => {
-  const { data, isLoading, error, applyMovement } = useInventoryData();
+  const { data, isLoading, error, refetch } = useInventoryData();
   const [search, setSearch] = useState('');
   const {
     movementModal,
@@ -18,6 +20,15 @@ const InventoryTemplate = () => {
     setMovementComment,
     resetAfterConfirm,
   } = useInventoryMovementModal();
+  const createMovementMutation = useApiMutation(
+    (draft: InventoryMovementDraft, signal?: AbortSignal) =>
+      createInventoryMovement(draft, data?.items ?? [], signal),
+    {
+      onSuccess: () => {
+        refetch();
+      },
+    },
+  );
 
   const filteredItems = useMemo(() => {
     if (!data) {
@@ -39,8 +50,17 @@ const InventoryTemplate = () => {
     return <EmptyState title="Sin datos de inventario" />;
   }
 
-  const handleConfirmMovement = (draft: InventoryMovementDraft) => {
-    applyMovement(draft);
+  const handleConfirmMovement = async (draft: InventoryMovementDraft) => {
+    const movement = await createMovementMutation.mutate(draft);
+    return Boolean(movement);
+  };
+
+  const handleOpenMovementModal = (
+    item: Parameters<typeof openMovementModal>[0],
+    mode: Parameters<typeof openMovementModal>[1],
+  ) => {
+    createMovementMutation.reset();
+    openMovementModal(item, mode);
   };
 
   return (
@@ -60,8 +80,8 @@ const InventoryTemplate = () => {
 
         <InventoryQuickList
           items={filteredItems}
-          onEntry={item => openMovementModal(item, 'entry')}
-          onExit={item => openMovementModal(item, 'exit')}
+          onEntry={item => handleOpenMovementModal(item, 'entry')}
+          onExit={item => handleOpenMovementModal(item, 'exit')}
         />
       </div>
 
@@ -71,6 +91,8 @@ const InventoryTemplate = () => {
         cases={movementModal.cases}
         units={movementModal.units}
         comment={movementModal.comment}
+        error={createMovementMutation.error}
+        isSaving={createMovementMutation.isPending}
         open={movementModal.open}
         onClose={closeMovementModal}
         onModeChange={setMovementMode}

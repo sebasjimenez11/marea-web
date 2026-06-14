@@ -29,7 +29,8 @@ export interface UseInventoryMovementModalResult {
   setMovementCases: (cases: number) => void;
   setMovementUnits: (units: number) => void;
   setMovementComment: (comment: string) => void;
-  resetAfterConfirm: (onConfirm: (draft: InventoryMovementDraft) => void) => (draft: InventoryMovementDraft) => void;
+  resetAfterConfirm: (onConfirm: (draft: InventoryMovementDraft) => boolean | Promise<boolean>) =>
+    (draft: InventoryMovementDraft) => Promise<void>;
 }
 
 export const useInventoryMovementModal = (): UseInventoryMovementModalResult => {
@@ -69,9 +70,14 @@ export const useInventoryMovementModal = (): UseInventoryMovementModalResult => 
     setMovementModal(current => ({ ...current, comment }));
   };
 
-  const resetAfterConfirm = (onConfirm: (draft: InventoryMovementDraft) => void) => (draft: InventoryMovementDraft) => {
-    onConfirm(draft);
-    closeMovementModal();
+  const resetAfterConfirm = (
+    onConfirm: (draft: InventoryMovementDraft) => boolean | Promise<boolean>,
+  ) => async (draft: InventoryMovementDraft) => {
+    const wasConfirmed = await onConfirm(draft);
+
+    if (wasConfirmed) {
+      closeMovementModal();
+    }
   };
 
   return {

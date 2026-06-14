@@ -1,1 +1,1 @@
-export { getInventoryData } from './inventory.service';
+export { createInventoryMovement, getInventoryData } from './inventory.service';

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Modal, ModalActionButtons } from '@/components/common';
+import { AlertBanner, Modal, ModalActionButtons } from '@/components/common';
 import { getProjectedStock } from '@/modules/inventory/lib';
 import {
   MovementModeToggle,
@@ -17,13 +17,15 @@ export interface InventoryMovementModalProps {
   cases: number;
   units: number;
   comment: string;
+  error?: Error | null;
+  isSaving?: boolean;
   open: boolean;
   onClose: () => void;
   onModeChange: (mode: MovementMode) => void;
   onCasesChange: (value: number) => void;
   onUnitsChange: (value: number) => void;
   onCommentChange: (value: string) => void;
-  onConfirm: (draft: InventoryMovementDraft) => void;
+  onConfirm: (draft: InventoryMovementDraft) => void | Promise<void>;
 }
 
 const InventoryMovementModal = ({
@@ -32,6 +34,8 @@ const InventoryMovementModal = ({
   cases,
   units,
   comment,
+  error,
+  isSaving = false,
   open,
   onClose,
   onModeChange,
@@ -50,14 +54,14 @@ const InventoryMovementModal = ({
 
   const hasQuantity = (cases + units) > 0;
   const isInvalidExit = mode === 'exit' && projection === null;
-  const isConfirmDisabled = !item || !hasQuantity || isInvalidExit;
+  const isConfirmDisabled = !item || !hasQuantity || isInvalidExit || isSaving;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!item || isConfirmDisabled) {
       return;
     }
 
-    onConfirm({
+    await onConfirm({
       itemId: item.id,
       type: mode,
       cases,
@@ -74,13 +78,26 @@ const InventoryMovementModal = ({
       footer={
         <ModalActionButtons
           onCancel={onClose}
-          confirmLabel="Confirmar"
-          confirmButtonProps={{ onClick: handleConfirm, disabled: isConfirmDisabled }}
+          confirmLabel={isSaving ? 'Registrando...' : 'Confirmar'}
+          confirmButtonProps={{
+            onClick: handleConfirm,
+            disabled: isConfirmDisabled,
+            isLoading: isSaving,
+          }}
         />
       }
     >
       {!item ? null : (
         <div className="space-y-5">
+          {error && (
+            <AlertBanner
+              key={error.message}
+              type="error"
+              title="No se pudo registrar el movimiento"
+              message={error.message}
+            />
+          )}
+
           <MovementModeToggle value={mode} onChange={onModeChange} />
 
           <MovementProductSummary item={item} />
