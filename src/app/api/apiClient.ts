@@ -30,7 +30,8 @@ const appendQueryParam = (params: URLSearchParams, key: string, value: QueryPara
 };
 
 const buildUrl = (path: string, queryParams?: QueryParams) => {
-  const url = new URL(`${API_BASE_URL}${normalizePath(path)}`);
+  const baseOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+  const url = new URL(`${API_BASE_URL}${normalizePath(path)}`, baseOrigin);
 
   if (!queryParams) {
     return url.toString();
@@ -177,4 +178,3 @@ export const api = {
   ): Promise<ApiResponse<TResponse>> =>
     request<TResponse>('DELETE', path, options),
 };
-
