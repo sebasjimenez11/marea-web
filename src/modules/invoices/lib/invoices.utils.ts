@@ -16,6 +16,8 @@ export const getInvoiceStatusLabel = (status: InvoiceStatus) => {
   switch (status) {
     case 'pending':
       return 'Pendiente';
+    case 'partial':
+      return 'Parcial';
     case 'paid':
       return 'Pagado';
     case 'overdue':
@@ -29,8 +31,10 @@ export const getInvoiceStatusVariant = (status: InvoiceStatus) => {
   switch (status) {
     case 'pending':
       return 'warning';
-    case 'paid':
+    case 'partial':
       return 'info';
+    case 'paid':
+      return 'success';
     case 'overdue':
       return 'error';
     default:
@@ -41,9 +45,9 @@ export const getInvoiceStatusVariant = (status: InvoiceStatus) => {
 export const getInvoicesSummary = (invoices: InvoiceItem[]): InvoicesSummary => ({
   pendingAmount: invoices
     .filter(invoice => invoice.status !== 'paid')
-    .reduce((total, invoice) => total + invoice.totalAmount, 0),
-  currentMonthAmount: invoices.reduce((total, invoice) => total + invoice.totalAmount, 0) * 2.29,
-  incomingInvoicesCount: 14,
+    .reduce((total, invoice) => total + invoice.pendingAmount, 0),
+  currentMonthAmount: invoices.reduce((total, invoice) => total + invoice.totalAmount, 0),
+  incomingInvoicesCount: invoices.filter(invoice => invoice.status === 'overdue').length,
 });
 
 export const filterInvoices = (invoices: InvoiceItem[], filters: InvoiceFilters) => {

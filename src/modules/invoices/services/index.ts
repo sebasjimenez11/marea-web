@@ -1,1 +1,1 @@
-export { getInvoicesData } from './invoices.service';
+export { getInvoicesData, payInvoice } from './invoices.service';

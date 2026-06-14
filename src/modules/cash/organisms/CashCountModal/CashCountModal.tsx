@@ -1,4 +1,4 @@
-import { Modal, ModalActionButtons } from '@/components/common';
+import { AlertBanner, Modal, ModalActionButtons } from '@/components/common';
 import { formatCashCurrency } from '@/modules/cash/lib';
 import { CashCountSection, CashCountSummary } from '@/modules/cash/molecules';
 import type { CashCountEntry } from '@/modules/cash/types';
@@ -13,8 +13,10 @@ export interface CashCountModalProps {
   countedTotal: number;
   difference: number;
   notes: string;
+  error?: Error | null;
+  isSaving?: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   onPrint: () => void;
   onNotesChange: (value: string) => void;
   onBillChange: (label: string, count: number) => void;
@@ -31,6 +33,8 @@ const CashCountModal = ({
   countedTotal,
   difference,
   notes,
+  error,
+  isSaving = false,
   onClose,
   onConfirm,
   onPrint,
@@ -47,13 +51,21 @@ const CashCountModal = ({
     footer={
       <ModalActionButtons
         onCancel={onClose}
-        confirmLabel="Confirmar Arqueo"
-        confirmButtonProps={{ onClick: onConfirm }}
+        confirmLabel={isSaving ? 'Guardando...' : 'Confirmar Arqueo'}
+        confirmButtonProps={{ onClick: onConfirm, isLoading: isSaving, disabled: isSaving }}
       />
     }
   >
     <div className="grid gap-6 lg:grid-cols-[1.5fr_0.9fr]">
       <div className="space-y-6 lg:border-r lg:border-white/10 lg:pr-6">
+        {error && (
+          <AlertBanner
+            key={error.message}
+            type="error"
+            title="No se pudo guardar el cierre"
+            message={error.message}
+          />
+        )}
         <CashCountSection title="Billetes" entries={billEntries} onChange={onBillChange} />
         <CashCountSection title="Monedas" entries={coinEntries} onChange={onCoinChange} />
       </div>

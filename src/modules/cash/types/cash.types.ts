@@ -33,4 +33,11 @@ export interface CashData {
   recentClosures: CashClosureHistoryItem[];
 }
 
+export interface CloseCashInput {
+  businessDate?: string;
+  openingCash: number;
+  countedCash: number;
+  notes: string;
+}
+
 export type { ApiResponse } from '@/app/api';

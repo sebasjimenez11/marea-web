@@ -5,4 +5,5 @@ export type {
   InvoicesData,
   InvoicesSummary,
   InvoiceStatus,
+  PayInvoiceInput,
 } from './invoices.types';

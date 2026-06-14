@@ -1,11 +1,13 @@
-import { Button, Card, formControlClassName } from '@/components/common';
+import { Button, Card } from '@/components/common';
 import { formatCashCurrency } from '@/modules/cash/lib';
 
 export interface CashClosePanelProps {
   initialFund: number;
+  expectedAmount: number;
+  onOpenCount: () => void;
 }
 
-const CashClosePanel = ({ initialFund }: CashClosePanelProps) => (
+const CashClosePanel = ({ initialFund, expectedAmount, onOpenCount }: CashClosePanelProps) => (
   <Card className="animate-panel-in p-5">
     <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
       <div className="flex items-center gap-4">
@@ -18,18 +20,15 @@ const CashClosePanel = ({ initialFund }: CashClosePanelProps) => (
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <label className="space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">
-            Efectivo Real Contado
-          </span>
-          <input
-            defaultValue="0.00"
-            className={`${formControlClassName} min-w-[180px]`}
-          />
-        </label>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">
+            Efectivo esperado
+          </p>
+          <p className="text-lg font-semibold text-white">{formatCashCurrency(expectedAmount)}</p>
+        </div>
 
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={onOpenCount}>
           <span aria-hidden="true">◉</span>
           Guardar Cierre
         </Button>

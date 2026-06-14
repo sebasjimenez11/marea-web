@@ -1,54 +1,91 @@
-import type { ApiResponse, CashData } from '@/modules/cash/types';
+import { api } from '@/app/api';
+import {
+  getTodayBusinessDate,
+  mapCashClosureToHistoryItem,
+  mapCashData,
+  mapCloseCashInputToPayload,
+  type CashClosureDto,
+  type CashMovementDto,
+  type UpsertCashClosurePayload,
+} from '@/modules/cash/services/cash.mappers';
+import type { ApiResponse, CashClosureHistoryItem, CashData, CloseCashInput } from '@/modules/cash/types';
 
-const cashData: CashData = {
-  summary: {
-    currentShiftLabel: 'Turno actual: 24 Oct 2023, 16:00 - Cierre',
-    branchName: 'Caja Principal',
-    turnName: 'Turno Tarde',
-    responsibleName: 'Carlos Mendoza',
-    liveBalance: 3450.5,
-    cashSales: 1250,
-    cardSales: 1900.5,
-    cashTransactions: 42,
-    cardTransactions: 86,
-    initialFund: 300,
-  },
-  recentClosures: [
-    {
-      id: 'closure-1',
-      shiftLabel: '23 Oct • Cierre',
-      responsibleName: 'M. Chen',
-      expectedTotal: 2850,
-      actualTotal: 2850,
-      status: 'balanced',
-    },
-    {
-      id: 'closure-2',
-      shiftLabel: '22 Oct • Cierre',
-      responsibleName: 'J. Doe',
-      expectedTotal: 3120.5,
-      actualTotal: 3115.5,
-      status: 'mismatch',
-    },
-    {
-      id: 'closure-3',
-      shiftLabel: '21 Oct • Cierre',
-      responsibleName: 'M. Chen',
-      expectedTotal: 4500,
-      actualTotal: 4500,
-      status: 'balanced',
-    },
-  ],
-};
+interface ApiListPayload<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page?: number;
+    limit?: number;
+  };
+}
+
+interface ApiDataPayload<T> {
+  data: T;
+}
 
 const createSuccessResponse = <T,>(data: T): ApiResponse<T> => ({
   success: true,
   data,
 });
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const createErrorResponse = <T,>(message: string): ApiResponse<T> => ({
+  success: false,
+  error: {
+    code: 'CASH_ERROR',
+    message,
+  },
+});
 
-export const getCashData = async (): Promise<ApiResponse<CashData>> => {
-  await delay(180);
-  return createSuccessResponse(cashData);
+export const getCashData = async (
+  signal?: AbortSignal,
+): Promise<ApiResponse<CashData>> => {
+  const today = getTodayBusinessDate();
+  const [movementsResponse, closuresResponse, todayClosureResponse] = await Promise.all([
+    api.get<ApiListPayload<CashMovementDto>>('/cash/movements', { businessDate: today, limit: 100 }, { signal }),
+    api.get<ApiListPayload<CashClosureDto>>('/cash/closures', { limit: 10 }, { signal }),
+    api.get<ApiDataPayload<CashClosureDto>>('/cash/closures/today', undefined, { signal }),
+  ]);
+
+  if (!movementsResponse.success || !movementsResponse.data) {
+    return createErrorResponse(
+      movementsResponse.error?.message || 'No se pudieron cargar los movimientos de caja',
+    );
+  }
+
+  if (!closuresResponse.success || !closuresResponse.data) {
+    return createErrorResponse(
+      closuresResponse.error?.message || 'No se pudo cargar el historial de cierres',
+    );
+  }
+
+  return createSuccessResponse(
+    mapCashData({
+      todayClosure: todayClosureResponse.success ? todayClosureResponse.data?.data ?? null : null,
+      movements: movementsResponse.data.data,
+      recentClosures: closuresResponse.data.data,
+    }),
+  );
+};
+
+export const closeCash = async (
+  input: CloseCashInput,
+  signal?: AbortSignal,
+): Promise<ApiResponse<CashClosureHistoryItem>> => {
+  const response = await api.post<ApiDataPayload<CashClosureDto>, UpsertCashClosurePayload>(
+    '/cash/closures',
+    mapCloseCashInputToPayload(input),
+    { signal },
+  );
+
+  if (!response.success || !response.data?.data) {
+    return {
+      success: false,
+      error: response.error || {
+        code: 'CLOSE_CASH_ERROR',
+        message: 'No se pudo guardar el cierre de caja',
+      },
+    };
+  }
+
+  return createSuccessResponse(mapCashClosureToHistoryItem(response.data.data));
 };

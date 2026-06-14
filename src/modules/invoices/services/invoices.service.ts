@@ -1,53 +1,110 @@
-import type { ApiResponse, InvoiceItem, InvoicesData } from '@/modules/invoices/types';
+import { api } from '@/app/api';
+import {
+  mapPayInvoiceInputToPayload,
+  mapSupplierInvoiceToInvoiceItem,
+  type PaySupplierInvoicePayload,
+  type SupplierDebtSummaryDto,
+  type SupplierInvoiceDto,
+} from '@/modules/invoices/services/invoices.mappers';
+import type { ApiResponse, InvoiceItem, InvoicesData, InvoicesSummary, PayInvoiceInput } from '@/modules/invoices/types';
 
-const invoices: InvoiceItem[] = [
-  {
-    id: 'invoice-1',
-    invoiceNumber: 'FAC-2023-089',
-    supplier: 'Distribuciones Sur',
-    issuedDate: '12 Oct 2023',
-    dueDate: '26 Oct 2023',
-    totalAmount: 1250,
-    status: 'pending',
-  },
-  {
-    id: 'invoice-2',
-    invoiceNumber: 'BPR-44502',
-    supplier: 'Bebidas Premium',
-    issuedDate: '05 Oct 2023',
-    dueDate: '19 Oct 2023',
-    totalAmount: 3400.75,
-    status: 'paid',
-  },
-  {
-    id: 'invoice-3',
-    invoiceNumber: 'HL-9012',
-    supplier: 'Hielos Locales',
-    issuedDate: '20 Sep 2023',
-    dueDate: '04 Oct 2023',
-    totalAmount: 150,
-    status: 'overdue',
-  },
-  {
-    id: 'invoice-4',
-    invoiceNumber: 'FAC-2023-117',
-    supplier: 'Licores del Norte',
-    issuedDate: '18 Oct 2023',
-    dueDate: '31 Oct 2023',
-    totalAmount: 820,
-    status: 'pending',
-  },
-];
+interface ApiListPayload<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page?: number;
+    limit?: number;
+  };
+}
+
+interface ApiDataPayload<T> {
+  data: T;
+}
 
 const createSuccessResponse = <T,>(data: T): ApiResponse<T> => ({
   success: true,
   data,
 });
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const createErrorResponse = <T,>(message: string): ApiResponse<T> => ({
+  success: false,
+  error: {
+    code: 'INVOICES_ERROR',
+    message,
+  },
+});
 
-export const getInvoicesData = async (): Promise<ApiResponse<InvoicesData>> => {
-  await delay(200);
+const getCurrentMonthAmount = (invoices: SupplierInvoiceDto[]) => {
+  const now = new Date();
 
-  return createSuccessResponse({ invoices });
+  return invoices
+    .filter(invoice => {
+      const invoiceDate = new Date(invoice.invoiceDate);
+      return invoiceDate.getMonth() === now.getMonth()
+        && invoiceDate.getFullYear() === now.getFullYear();
+    })
+    .reduce((total, invoice) => total + invoice.totalAmountCents, 0) / 100;
+};
+
+export const getInvoicesData = async (
+  signal?: AbortSignal,
+): Promise<ApiResponse<InvoicesData>> => {
+  const [invoicesResponse, debtResponse, overdueResponse] = await Promise.all([
+    api.get<ApiListPayload<SupplierInvoiceDto>>('/purchasing/invoices', { limit: 100 }, { signal }),
+    api.get<ApiDataPayload<SupplierDebtSummaryDto>>('/purchasing/invoices/debt-summary', undefined, { signal }),
+    api.get<ApiDataPayload<SupplierInvoiceDto[]>>('/purchasing/invoices/overdue', undefined, { signal }),
+  ]);
+
+  if (!invoicesResponse.success || !invoicesResponse.data) {
+    return createErrorResponse(
+      invoicesResponse.error?.message || 'No se pudieron cargar las facturas',
+    );
+  }
+
+  if (!debtResponse.success || !debtResponse.data?.data) {
+    return createErrorResponse(
+      debtResponse.error?.message || 'No se pudo cargar el resumen de deuda',
+    );
+  }
+
+  if (!overdueResponse.success || !overdueResponse.data?.data) {
+    return createErrorResponse(
+      overdueResponse.error?.message || 'No se pudieron cargar las facturas vencidas',
+    );
+  }
+
+  const invoices = invoicesResponse.data.data;
+  const summary: InvoicesSummary = {
+    pendingAmount: debtResponse.data.data.totalDebtCents / 100,
+    currentMonthAmount: getCurrentMonthAmount(invoices),
+    incomingInvoicesCount: overdueResponse.data.data.length,
+  };
+
+  return createSuccessResponse({
+    invoices: invoices.map(mapSupplierInvoiceToInvoiceItem),
+    summary,
+  });
+};
+
+export const payInvoice = async (
+  input: PayInvoiceInput,
+  signal?: AbortSignal,
+): Promise<ApiResponse<InvoiceItem>> => {
+  const response = await api.post<ApiDataPayload<SupplierInvoiceDto>, PaySupplierInvoicePayload>(
+    `/purchasing/invoices/${input.invoiceId}/pay`,
+    mapPayInvoiceInputToPayload(input),
+    { signal },
+  );
+
+  if (!response.success || !response.data?.data) {
+    return {
+      success: false,
+      error: response.error || {
+        code: 'PAY_INVOICE_ERROR',
+        message: 'No se pudo registrar el pago',
+      },
+    };
+  }
+
+  return createSuccessResponse(mapSupplierInvoiceToInvoiceItem(response.data.data));
 };

@@ -4,6 +4,7 @@ import type { InvoiceStatus } from '@/modules/invoices/types';
 const filterOptions: Array<{ label: string; value: 'all' | InvoiceStatus }> = [
   { label: 'Todos los estados', value: 'all' },
   { label: 'Pendientes', value: 'pending' },
+  { label: 'Parciales', value: 'partial' },
   { label: 'Pagadas', value: 'paid' },
   { label: 'Vencidas', value: 'overdue' },
 ];

@@ -5,9 +5,10 @@ import type { InvoiceItem } from '@/modules/invoices/types';
 export interface InvoicesTableProps {
   invoices: InvoiceItem[];
   totalInvoices: number;
+  onPayInvoice?: (invoice: InvoiceItem) => void;
 }
 
-const InvoicesTable = ({ invoices, totalInvoices }: InvoicesTableProps) => {
+const InvoicesTable = ({ invoices, totalInvoices, onPayInvoice }: InvoicesTableProps) => {
   if (!invoices.length) {
     return (
       <EmptyState
@@ -33,7 +34,7 @@ const InvoicesTable = ({ invoices, totalInvoices }: InvoicesTableProps) => {
         </thead>
         <tbody>
           {invoices.map(invoice => (
-            <InvoiceTableRow key={invoice.id} invoice={invoice} />
+            <InvoiceTableRow key={invoice.id} invoice={invoice} onPay={onPayInvoice} />
           ))}
         </tbody>
       </table>

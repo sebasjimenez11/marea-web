@@ -5,4 +5,5 @@ export type {
   CashClosureStatus,
   CashData,
   CashDaySummary,
+  CloseCashInput,
 } from './cash.types';

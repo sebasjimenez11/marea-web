@@ -1,1 +1,1 @@
-export { getCashData } from './cash.service';
+export { closeCash, getCashData } from './cash.service';
