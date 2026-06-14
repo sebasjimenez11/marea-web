@@ -4,9 +4,15 @@ import type { SupplierOrderGroup } from '@/modules/orders/types';
 
 export interface OrderSupplierHeaderProps {
   supplier: SupplierOrderGroup;
+  isGenerating?: boolean;
+  onGenerateOrder?: (supplier: SupplierOrderGroup) => void;
 }
 
-const OrderSupplierHeader = ({ supplier }: OrderSupplierHeaderProps) => (
+const OrderSupplierHeader = ({
+  supplier,
+  isGenerating = false,
+  onGenerateOrder,
+}: OrderSupplierHeaderProps) => (
   <div className="flex flex-col gap-4 border-b border-white/8 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
     <div className="flex items-center gap-3">
       <IconTile className="bg-white/6 text-text-primary">
@@ -25,7 +31,13 @@ const OrderSupplierHeader = ({ supplier }: OrderSupplierHeaderProps) => (
       </div>
     </div>
 
-    <Button className="gap-2 self-start sm:self-auto">
+    <Button
+      className="gap-2 self-start sm:self-auto"
+      disabled={!supplier.canGenerateOrder || isGenerating}
+      isLoading={isGenerating}
+      onClick={() => onGenerateOrder?.(supplier)}
+      title={supplier.generateDisabledReason}
+    >
       <span aria-hidden="true">▷</span>
       Generar Pedido
     </Button>

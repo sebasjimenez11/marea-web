@@ -4,16 +4,26 @@ import type { SupplierOrderGroup } from '@/modules/orders/types';
 
 export interface SupplierOrdersCardProps {
   supplier: SupplierOrderGroup;
+  generatingSupplierId?: string | null;
+  onGenerateOrder?: (supplier: SupplierOrderGroup) => void;
 }
 
-const SupplierOrdersCard = ({ supplier }: SupplierOrdersCardProps) => {
+const SupplierOrdersCard = ({
+  supplier,
+  generatingSupplierId,
+  onGenerateOrder,
+}: SupplierOrdersCardProps) => {
   if (!supplier.items.length) {
     return null;
   }
 
   return (
     <Card className="animate-panel-in overflow-hidden p-0">
-      <OrderSupplierHeader supplier={supplier} />
+      <OrderSupplierHeader
+        supplier={supplier}
+        isGenerating={generatingSupplierId === supplier.id}
+        onGenerateOrder={onGenerateOrder}
+      />
 
       <div className="overflow-x-auto">
         <table className="min-w-full">

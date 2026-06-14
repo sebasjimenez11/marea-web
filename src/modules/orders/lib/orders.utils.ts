@@ -9,7 +9,7 @@ export const formatOrdersCurrency = (value: number) =>
 
 export const getOrdersSummary = (suppliers: SupplierOrderGroup[]): OrdersSummary => ({
   totalSuggestedProducts: suppliers.reduce((total, supplier) => total + supplier.items.length, 0),
-  affectedSuppliers: suppliers.filter(supplier => supplier.supplierStatus === 'active').length,
+  affectedSuppliers: suppliers.filter(supplier => supplier.canGenerateOrder).length,
   estimatedValue: suppliers.reduce((total, supplier) => total + supplier.estimatedValue, 0),
 });
 

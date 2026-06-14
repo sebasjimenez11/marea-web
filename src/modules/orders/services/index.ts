@@ -1,1 +1,6 @@
-export { getOrdersData } from './orders.service';
+export {
+  cancelSupplierOrder,
+  createSupplierOrderFromSuggestion,
+  getOrdersData,
+  receiveSupplierOrder,
+} from './orders.service';

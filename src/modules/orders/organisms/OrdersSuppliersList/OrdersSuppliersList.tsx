@@ -4,9 +4,15 @@ import type { SupplierOrderGroup } from '@/modules/orders/types';
 
 export interface OrdersSuppliersListProps {
   suppliers: SupplierOrderGroup[];
+  generatingSupplierId?: string | null;
+  onGenerateOrder?: (supplier: SupplierOrderGroup) => void;
 }
 
-const OrdersSuppliersList = ({ suppliers }: OrdersSuppliersListProps) => {
+const OrdersSuppliersList = ({
+  suppliers,
+  generatingSupplierId,
+  onGenerateOrder,
+}: OrdersSuppliersListProps) => {
   if (!suppliers.length) {
     return (
       <EmptyState
@@ -19,7 +25,12 @@ const OrdersSuppliersList = ({ suppliers }: OrdersSuppliersListProps) => {
   return (
     <div className="space-y-4">
       {suppliers.map(supplier => (
-        <SupplierOrdersCard key={supplier.id} supplier={supplier} />
+        <SupplierOrdersCard
+          key={supplier.id}
+          supplier={supplier}
+          generatingSupplierId={generatingSupplierId}
+          onGenerateOrder={onGenerateOrder}
+        />
       ))}
     </div>
   );

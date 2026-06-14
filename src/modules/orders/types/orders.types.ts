@@ -9,10 +9,13 @@ export interface SuggestedOrderItem {
 
 export interface SupplierOrderGroup {
   id: string;
+  supplierId: string | null;
   supplierName: string;
   supplierStatus: 'active' | 'inactive';
   icon: 'truck' | 'star' | 'warehouse';
   estimatedValue: number;
+  canGenerateOrder: boolean;
+  generateDisabledReason?: string;
   items: SuggestedOrderItem[];
 }
 
