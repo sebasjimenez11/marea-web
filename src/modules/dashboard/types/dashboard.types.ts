@@ -36,5 +36,11 @@ export interface DashboardData {
   stockItems: StockItem[];
   overdueInvoices: InvoiceItem[];
   pendingOrders: OrderItem[];
+  isCashClosed: boolean;
+  cashDifference: number | null;
+  totalSupplierDebt: number;
+  openInvoicesCount: number;
+  outOfStockCount: number;
+  lowStockCount: number;
 }
 export type { ApiResponse } from '@/app/api';

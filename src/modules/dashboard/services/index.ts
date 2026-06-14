@@ -1,7 +1,1 @@
-export {
-  getDashboardData,
-  getDashboardStats,
-  getCriticalStock,
-  getOverdueInvoices,
-  getPendingOrders,
-} from './dashboard.service';
+export { getDashboardData } from './dashboard.service';

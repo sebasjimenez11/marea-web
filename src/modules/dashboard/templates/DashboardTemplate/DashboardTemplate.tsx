@@ -36,11 +36,13 @@ const DashboardTemplate = ({ children }: DashboardTemplateProps) => {
         action={<DashboardPeriodTabs />}
       />
 
-      <AlertBanner
-        type="warning"
-        title="Cierre de Caja Pendiente"
-        message="Sin cierre registrado. Realiza el cierre del turno anterior antes de iniciar operaciones formales."
-      />
+      {!data.isCashClosed && (
+        <AlertBanner
+          type="warning"
+          title="Cierre de Caja Pendiente"
+          message="Sin cierre registrado. Realiza el cierre del turno anterior antes de iniciar operaciones formales."
+        />
+      )}
 
       <DashboardStats dashboardData={data} />
 

@@ -64,13 +64,13 @@ export interface DashboardSummaryMetrics {
 }
 
 export const getDashboardSummaryMetrics = (dashboardData: DashboardData): DashboardSummaryMetrics => {
-  const { stats, stockItems, overdueInvoices, pendingOrders } = dashboardData;
-  const criticalProducts = stockItems.filter(item => item.status === 'critical').length;
-  const lowStockProducts = stockItems.filter(item => item.status === 'low').length;
-  const pendingInvoices = overdueInvoices.length;
+  const { stats, pendingOrders } = dashboardData;
+  const criticalProducts = dashboardData.outOfStockCount;
+  const lowStockProducts = dashboardData.lowStockCount;
+  const pendingInvoices = dashboardData.openInvoicesCount;
   const activeOrders = pendingOrders.filter(item => item.status !== 'completed').length;
-  const cashDiff = stats.income - stats.expenses - stats.balance;
-  const supplierDebt = overdueInvoices.reduce((total, invoice) => total + invoice.amount, 0);
+  const cashDiff = dashboardData.cashDifference ?? 0;
+  const supplierDebt = dashboardData.totalSupplierDebt;
 
   return {
     primaryMetrics: [
